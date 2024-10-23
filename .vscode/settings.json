@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "style.scss": "tailwindcss"
+    },
+    "editor.quickSuggestions": {
+        "strings": true
+    },
+    "path-intellisense.mappings": {
+        "@": "${workspaceFolder}/src/assets",
+        "@css": "${workspaceFolder}/src/assets"
+    },
+    "[jade]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[pug]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}
