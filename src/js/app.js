@@ -1,1 +1,5 @@
-document.addEventListener("DOMContentLoaded", () => {});
+import Snowflakes from "./components/Snowflakes";
+
+document.addEventListener("DOMContentLoaded", () => {
+    Snowflakes();
+});
