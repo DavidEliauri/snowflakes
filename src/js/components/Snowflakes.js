@@ -45,9 +45,9 @@ export default function Snowflakes() {
             draw() {
                 context.beginPath();
                 context.arc(
-                    this.positionX + CELL_WIDTH / 2,
-                    this.positionY + CELL_WIDTH / 2,
-                    CELL_WIDTH / 2,
+                    this.positionX + CIRCLE_RADIUS / 2,
+                    this.positionY + CIRCLE_RADIUS / 2,
+                    CIRCLE_RADIUS / 2,
                     0,
                     Math.PI * 2
                 );
@@ -58,13 +58,19 @@ export default function Snowflakes() {
 
             update() {
                 if (
-                    this.positionY + this.speedY + CELL_WIDTH / 2 >
+                    this.positionY + this.speedY + CIRCLE_RADIUS / 2 >
                     canvas.height
                 ) {
                     this.draw();
 
                     return;
                 }
+
+                flakes.forEach((flake) => {
+                    if (flake.id === this.id) {
+                        return;
+                    }
+                });
 
                 this.positionY += this.speedY;
 
@@ -87,142 +93,13 @@ export default function Snowflakes() {
             return Math.floor(Math.random() * (max - min) + min);
         }
 
-        /**
-         * @typedef Grid
-         * @type {Grid}
-         */
-
-        const CELL_WIDTH = 10;
-
-        /** @type {Grid} */
-        let currentGrid,
-            /** @type {number} */
-            cols,
-            /** @type {number} */
-            rows;
-
-        /**
-         * @param {number} cols
-         * @param {number} rows
-         */
-        function makeGrid(cols, rows) {
-            /** @type {Grid} */
-            let array = new Array(cols);
-
-            for (let i = 0; i < array.length; i++) {
-                array[i] = new Array(rows);
-
-                for (let j = 0; j < array[i].length; j++) {
-                    array[i][j] = 0;
-                }
-            }
-
-            return array;
-        }
-
-        /**
-         * For test only
-         */
-        function drawCells() {
-            for (let i = 0; i < currentGrid.length; i++) {
-                for (let j = 0; j < currentGrid[i].length; j++) {
-                    context.beginPath();
-
-                    context.strokeStyle = "rgba(0, 0, 0, 0.3)";
-                    context.strokeRect(
-                        CELL_WIDTH * i,
-                        CELL_WIDTH * j,
-                        CELL_WIDTH,
-                        CELL_WIDTH
-                    );
-
-                    context.closePath();
-                }
-            }
-        }
-
-        function drawFlakes() {
-            for (let i = 0; i < currentGrid.length; i++) {
-                for (let j = 0; j < currentGrid[i].length; j++) {
-                    const cell = currentGrid[i][j];
-
-                    if (cell !== 1) {
-                        continue;
-                    }
-
-                    const leftTopCell = currentGrid[i - 1]?.[j - 1];
-                    const topCell = currentGrid[i][j - 1];
-                    const rightTopCell = currentGrid[i + 1]?.[j - 1];
-                    const rightCell = currentGrid[i + 1]?.[j];
-                    const rightBottomCell = currentGrid[i + 1]?.[j + 1];
-                    const bottomCell = currentGrid[i][j + 1];
-                    const leftBottomCell = currentGrid[i - 1]?.[j + 1];
-                    const leftCell = currentGrid[i - 1]?.[j];
-
-                    const hasFlakesFromEverySide =
-                        (leftTopCell === 1 || leftTopCell === undefined) &&
-                        (topCell === 1 || topCell === undefined) &&
-                        (rightTopCell === 1 || rightTopCell === undefined) &&
-                        (rightCell === 1 || rightCell === undefined) &&
-                        (rightBottomCell === 1 ||
-                            rightBottomCell === undefined) &&
-                        (bottomCell === 1 || bottomCell === undefined) &&
-                        (leftBottomCell === 1 ||
-                            leftBottomCell === undefined) &&
-                        (leftCell === 1 || leftCell === undefined);
-
-                    if (hasFlakesFromEverySide) {
-                        context.fillStyle = "#000";
-                        context.fillRect(
-                            CELL_WIDTH * i,
-                            CELL_WIDTH * j,
-                            CELL_WIDTH,
-                            CELL_WIDTH
-                        );
-
-                        continue;
-                    }
-
-                    context.beginPath();
-                    context.arc(
-                        CELL_WIDTH * i + CELL_WIDTH / 2,
-                        CELL_WIDTH * j + CELL_WIDTH / 2,
-                        CELL_WIDTH / 2,
-                        0,
-                        Math.PI * 2
-                    );
-                    context.fillStyle = "#000";
-                    context.fill();
-                    context.closePath();
-                }
-            }
-        }
+        const CIRCLE_RADIUS = 10;
 
         /** @type {Flake[]} */
         const flakes = [];
 
         function setup() {
             flakes.push(new Flake(0, 0));
-
-            cols = Math.ceil(canvas.width / CELL_WIDTH);
-            rows = Math.ceil(canvas.height / CELL_WIDTH);
-
-            currentGrid = makeGrid(cols, rows);
-
-            drawCells();
-
-            // const randomX = getRandomArbitrary(0, cols);
-
-            // currentGrid[randomX][0] = 1;
-
-            const randomX = getRandomArbitrary(1, cols - 1);
-
-            currentGrid[randomX - 1][0] = 1;
-            currentGrid[randomX][0] = 1;
-            currentGrid[randomX + 1][0] = 1;
-            currentGrid[randomX][1] = 1;
-
-            drawFlakes();
 
             requestAnimationFrame(draw);
         }
@@ -234,45 +111,18 @@ export default function Snowflakes() {
             if (!lastFrameInMs || currentFrameInMs - lastFrameInMs >= 1 * 500) {
                 lastFrameInMs = currentFrameInMs;
 
-                const randomX = getRandomArbitrary(1, cols - 1);
+                const randomX = getRandomArbitrary(0, canvas.width);
 
-                currentGrid[randomX - 1][0] = 1;
-                currentGrid[randomX][0] = 1;
-                currentGrid[randomX + 1][0] = 1;
-                currentGrid[randomX][1] = 1;
+                flakes.push(new Flake(randomX, 0));
             }
+
+            window.flakes = flakes;
 
             context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
             flakes.forEach((flake) => {
                 flake.update();
             });
-
-            // const newGrid = makeGrid(cols, rows);
-
-            // for (let i = 0; i < currentGrid.length; i++) {
-            //     for (let j = 0; j < currentGrid[i].length; j++) {
-            //         const cell = currentGrid[i][j];
-            //         const bellowCell = currentGrid[i]?.[j + 1];
-
-            //         if (cell === 0) {
-            //             continue;
-            //         }
-
-            //         if (bellowCell === 0) {
-            //             newGrid[i][j + 1] = 1;
-
-            //             continue;
-            //         }
-
-            //         newGrid[i][j] = 1;
-            //     }
-            // }
-
-            // currentGrid = newGrid;
-
-            // drawCells();
-            // drawFlakes();
 
             requestAnimationFrame(draw);
         }
