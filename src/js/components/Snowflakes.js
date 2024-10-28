@@ -1,83 +1,5 @@
 export default function Snowflakes() {
     (() => {
-        function makeid(length = 5) {
-            let result = "";
-            const characters =
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            const charactersLength = characters.length;
-            let counter = 0;
-            while (counter < length) {
-                result += characters.charAt(
-                    Math.floor(Math.random() * charactersLength)
-                );
-                counter += 1;
-            }
-            return result;
-        }
-
-        class Flake {
-            /** @type {string} */
-            id;
-            /** @type {number} */
-            positionX;
-            /** @type {number} */
-            positionY;
-            /** @type {number} */
-            speedX;
-            /** @type {number} */
-            speedY;
-
-            /**
-             * @param {number} positionX
-             * @param {number} positionY
-             */
-            constructor(positionX, positionY) {
-                this.positionX = positionX;
-                this.positionY = positionY;
-
-                this.speedY = 10;
-
-                this.id = makeid();
-
-                this.draw();
-            }
-
-            draw() {
-                context.beginPath();
-                context.arc(
-                    this.positionX + CIRCLE_RADIUS / 2,
-                    this.positionY + CIRCLE_RADIUS / 2,
-                    CIRCLE_RADIUS / 2,
-                    0,
-                    Math.PI * 2
-                );
-                context.fillStyle = "#000";
-                context.fill();
-                context.closePath();
-            }
-
-            update() {
-                if (
-                    this.positionY + this.speedY + CIRCLE_RADIUS / 2 >
-                    canvas.height
-                ) {
-                    this.draw();
-
-                    return;
-                }
-
-                flakes.forEach((flake) => {
-                    if (flake.id === this.id) {
-                        return;
-                    }
-                });
-
-                this.positionY += this.speedY;
-
-                this.draw();
-            }
-        }
-
         const canvas = document.createElement("canvas");
         canvas.style.position = "absolute";
         canvas.style.top = "0px";
@@ -93,13 +15,169 @@ export default function Snowflakes() {
             return Math.floor(Math.random() * (max - min) + min);
         }
 
-        const CIRCLE_RADIUS = 10;
+        /**
+         * @typedef Grid
+         * @type {Grid}
+         */
 
-        /** @type {Flake[]} */
-        const flakes = [];
+        const CELL_WIDTH = 10;
+
+        /** @type {Grid} */
+        let currentGrid,
+            /** @type {number} */
+            cols,
+            /** @type {number} */
+            rows;
+
+        /**
+         * @param {number} cols
+         * @param {number} rows
+         */
+        function makeGrid(cols, rows) {
+            /** @type {Grid} */
+            let array = new Array(cols);
+
+            for (let i = 0; i < array.length; i++) {
+                array[i] = new Array(rows);
+
+                for (let j = 0; j < array[i].length; j++) {
+                    array[i][j] = 0;
+                }
+            }
+
+            return array;
+        }
+
+        /**
+         * For test only
+         */
+        function drawCells() {
+            for (let i = 0; i < currentGrid.length; i++) {
+                for (let j = 0; j < currentGrid[i].length; j++) {
+                    context.beginPath();
+
+                    context.strokeStyle = "rgba(255, 255, 255, 0.1)";
+                    context.strokeRect(
+                        CELL_WIDTH * i,
+                        CELL_WIDTH * j,
+                        CELL_WIDTH,
+                        CELL_WIDTH
+                    );
+
+                    context.closePath();
+                }
+            }
+        }
+
+        function drawFlakes() {
+            for (let i = 0; i < currentGrid.length; i++) {
+                for (let j = 0; j < currentGrid[i].length; j++) {
+                    const cell = currentGrid[i][j];
+
+                    if (cell !== 1) {
+                        continue;
+                    }
+
+                    const leftTopCell = currentGrid[i - 1]?.[j - 1];
+                    const topCell = currentGrid[i][j - 1];
+                    const rightTopCell = currentGrid[i + 1]?.[j - 1];
+                    const rightCell = currentGrid[i + 1]?.[j];
+                    const rightBottomCell = currentGrid[i + 1]?.[j + 1];
+                    const bottomCell = currentGrid[i][j + 1];
+                    const leftBottomCell = currentGrid[i - 1]?.[j + 1];
+                    const leftCell = currentGrid[i - 1]?.[j];
+
+                    const hasFlakeLeftTop =
+                        leftTopCell === 1 || leftTopCell === undefined;
+
+                    const hasFlakeTop = topCell === 1 || topCell === undefined;
+
+                    const hasFlakeRightTop =
+                        rightTopCell === 1 || rightTopCell === undefined;
+
+                    const hasFlakeRight =
+                        rightCell === 1 || rightCell === undefined;
+
+                    const hasFlakeLeftBottom =
+                        leftBottomCell === 1 || leftBottomCell === undefined;
+
+                    const hasFlakeBottom =
+                        bottomCell === 1 || bottomCell === undefined;
+
+                    const hasFlakeRightBottom =
+                        rightBottomCell === 1 || rightBottomCell === undefined;
+
+                    const hasFlakeLeft =
+                        leftCell === 1 || leftCell === undefined;
+
+                    const hasFlakesFromEverySide =
+                        hasFlakeTop &&
+                        hasFlakeRight &&
+                        hasFlakeBottom &&
+                        hasFlakeLeft;
+
+                    if (hasFlakesFromEverySide) {
+                        context.fillStyle = "#fff";
+                        context.fillRect(
+                            CELL_WIDTH * i,
+                            CELL_WIDTH * j,
+                            CELL_WIDTH,
+                            CELL_WIDTH
+                        );
+
+                        continue;
+                    }
+
+                    const isRoundedLeftTop = !!(
+                        !hasFlakeTop &&
+                        !hasFlakeLeftTop &&
+                        !hasFlakeLeft
+                    );
+                    const isRoundedRightTop = !!(
+                        !hasFlakeTop &&
+                        !hasFlakeRightTop &&
+                        !hasFlakeRight
+                    );
+                    const isRoundedRightBottom = !!(
+                        !hasFlakeBottom && !hasFlakeRightBottom
+                    );
+                    const isRoundedLeftBottom = !!(
+                        !hasFlakeBottom && !hasFlakeLeftBottom
+                    );
+
+                    context.beginPath();
+                    context.roundRect(
+                        CELL_WIDTH * i,
+                        CELL_WIDTH * j,
+                        CELL_WIDTH,
+                        CELL_WIDTH,
+                        [
+                            isRoundedLeftTop ? 9999 : 0,
+                            isRoundedRightTop ? 9999 : 0,
+                            isRoundedRightBottom ? 9999 : 0,
+                            isRoundedLeftBottom ? 9999 : 0,
+                        ]
+                    );
+                    context.fillStyle = "#fff";
+                    context.fill();
+                    context.closePath();
+                }
+            }
+        }
 
         function setup() {
-            flakes.push(new Flake(0, 0));
+            cols = Math.ceil(canvas.width / CELL_WIDTH);
+            rows = Math.ceil(canvas.height / CELL_WIDTH);
+
+            currentGrid = makeGrid(cols, rows);
+
+            drawCells();
+
+            const randomX = getRandomArbitrary(0, cols);
+
+            currentGrid[randomX][0] = 1;
+
+            drawFlakes();
 
             requestAnimationFrame(draw);
         }
@@ -108,21 +186,67 @@ export default function Snowflakes() {
 
         function draw(currentFrameInMs) {
             // each 2 seconds call the createNewObject() function
-            if (!lastFrameInMs || currentFrameInMs - lastFrameInMs >= 1 * 500) {
+            if (!lastFrameInMs || currentFrameInMs - lastFrameInMs >= 1 * 100) {
                 lastFrameInMs = currentFrameInMs;
 
-                const randomX = getRandomArbitrary(0, canvas.width);
+                const randomX = getRandomArbitrary(1, cols - 1);
 
-                flakes.push(new Flake(randomX, 0));
+                currentGrid[randomX][0] = 1;
             }
-
-            window.flakes = flakes;
 
             context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-            flakes.forEach((flake) => {
-                flake.update();
-            });
+            const newGrid = makeGrid(cols, rows);
+
+            for (let i = 0; i < currentGrid.length; i++) {
+                for (let j = 0; j < currentGrid[i].length; j++) {
+                    const cell = currentGrid[i][j];
+                    const leftBottomCell = currentGrid[i - 1]?.[j + 1];
+                    const bottomCell = currentGrid[i][j + 1];
+                    const rightBottomCell = currentGrid[i + 1]?.[j + 1];
+
+                    if (cell === 0) {
+                        continue;
+                    }
+
+                    if (bottomCell === 0) {
+                        newGrid[i][j + 1] = 1;
+
+                        continue;
+                    }
+
+                    if (leftBottomCell === 0 && rightBottomCell === 0) {
+                        if (Math.random() > 0.5) {
+                            newGrid[i - 1][j + 1] = 1;
+
+                            continue;
+                        }
+
+                        newGrid[i + 1][j + 1] = 1;
+
+                        continue;
+                    }
+
+                    if (leftBottomCell === 0) {
+                        newGrid[i - 1][j + 1] = 1;
+
+                        continue;
+                    }
+
+                    if (rightBottomCell === 0) {
+                        newGrid[i + 1][j + 1] = 1;
+
+                        continue;
+                    }
+
+                    newGrid[i][j] = 1;
+                }
+            }
+
+            currentGrid = newGrid;
+
+            // drawCells();
+            drawFlakes();
 
             requestAnimationFrame(draw);
         }
